@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Lista Produtos Vue + Tailwind CDN</title>
+
+  <!-- Tailwind via CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Vue 3 via CDN -->
+  <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+  <!-- Axios via CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+</head>
+<body class="bg-gray-50 p-6">
+
+<div id="app"></div>
+
+<script>
+const { ref, reactive, onMounted } = Vue
+
+const App = {
+  template: `
+  <div class="space-y-4">
+    <!-- Header -->
+    <div class="flex justify-between items-center">
+      <h1 class="text-2xl font-bold text-gray-800">Lista de Produtos</h1>
+      <button @click="openModal('novo')" class="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600 transition">
+        Novo Produto
+      </button>
+    </div>
+
+    <!-- Busca -->
+    <input
+      type="text"
+      v-model="search"
+      placeholder="Buscar por nome ou descrição"
+      class="border p-2 rounded w-full"
+      @input="fetchProdutos"
+    />
+
+    <!-- Tabela -->
+    <table class="w-full bg-white shadow rounded overflow-hidden">
+      <thead class="bg-gray-200">
+        <tr>
+          <th class="p-2 text-left">Nome</th>
+          <th class="p-2 text-left">Descrição</th>
+          <th class="p-2 text-left">Preço</th>
+          <th class="p-2 text-left">Data Validade</th>
+          <th class="p-2 text-left">Categoria</th>
+          <th class="p-2">Ações</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr v-for="produto in produtos.data" :key="produto.id" class="border-b hover:bg-gray-50">
+          <td class="p-2">{{ produto.nome }}</td>
+          <td class="p-2">{{ produto.descricao }}</td>
+          <td class="p-2">{{ produto.preco }}</td>
+          <td class="p-2">{{ produto.data_validade }}</td>
+          <td class="p-2">{{ produto.categoria.nome }}</td>
+          <td class="p-2 space-x-2">
+            <button @click="openModal('editar', produto)" class="bg-blue-500 text-white px-2 py-1 rounded hover:bg-blue-600 transition">Editar</button>
+            <button @click="deletar(produto.id)" class="bg-red-500 text-white px-2 py-1 rounded hover:bg-red-600 transition">Excluir</button>
+          </td>
+        </tr>
+        <tr v-if="produtos.data.length === 0">
+          <td colspan="6" class="p-4 text-center text-gray-500">Nenhum produto encontrado</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <!-- Paginação -->
+    <div class="flex justify-between mt-4">
+      <button :disabled="!produtos.prev_page_url" @click="fetchProdutos(produtos.prev_page_url)" class="px-3 py-1 bg-gray-300 rounded disabled:opacity-50">Anterior</button>
+      <button :disabled="!produtos.next_page_url" @click="fetchProdutos(produtos.next_page_url)" class="px-3 py-1 bg-gray-300 rounded disabled:opacity-50">Próximo</button>
+    </div>
+
+    <!-- Modal -->
+    <div v-if="modal.open" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+      <div class="bg-white rounded shadow-lg w-full max-w-md p-6 relative">
+        <h2 class="text-xl font-bold mb-4">{{ modal.mode === 'novo' ? 'Novo Produto' : 'Editar Produto' }}</h2>
+
+        <div class="space-y-2">
+          <input v-model="form.nome" placeholder="Nome" class="w-full border p-2 rounded"/>
+          <input v-model="form.descricao" placeholder="Descrição" class="w-full border p-2 rounded"/>
+          <input v-model="form.preco" placeholder="Preço" type="number" class="w-full border p-2 rounded"/>
+          <input v-model="form.data_validade" placeholder="Data Validade" type="date" class="w-full border p-2 rounded"/>
+          <input v-model="form.categoria_id" placeholder="ID Categoria" type="number" class="w-full border p-2 rounded"/>
+        </div>
+
+        <div class="flex justify-end space-x-2 mt-4">
+          <button @click="closeModal" class="px-4 py-2 bg-gray-300 rounded hover:bg-gray-400">Cancelar</button>
+          <button @click="submitForm" class="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600">
+            {{ modal.mode === 'novo' ? 'Criar' : 'Salvar' }}
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+  `,
+  setup() {
+    const search = ref('')
+    const produtos = reactive({
+      data: [],
+      current_page: 1,
+      last_page: 1,
+      next_page_url: null,
+      prev_page_url: null
+    })
+
+    const modal = reactive({
+      open: false,
+      mode: 'novo', // 'novo' ou 'editar'
+      produtoId: null
+    })
+
+    const form = reactive({
+      nome: '',
+      descricao: '',
+      preco: '',
+      data_validade: '',
+      categoria_id: ''
+    })
+
+    // Fetch produtos com paginação
+    const fetchProdutos = async (url) => {
+      try {
+        const endpoint = url || 'http://127.0.0.1:8000/api/products'
+        const res = await axios.get(endpoint, { params: { search: search.value } })
+        Object.assign(produtos, res.data)
+      } catch (err) {
+        console.error(err)
+      }
+    }
+
+    // Abrir modal
+    const openModal = (mode, produto = null) => {
+      modal.open = true
+      modal.mode = mode
+      if (mode === 'editar' && produto) {
+        modal.produtoId = produto.id
+        form.nome = produto.nome
+        form.descricao = produto.descricao
+        form.preco = produto.preco
+        form.data_validade = produto.data_validade
+        form.categoria_id = produto.categoria.id
+      } else {
+        modal.produtoId = null
+        form.nome = ''
+        form.descricao = ''
+        form.preco = ''
+        form.data_validade = ''
+        form.categoria_id = ''
+      }
+    }
+
+    const closeModal = () => modal.open = false
+
+    // Criar / Editar produto
+    const submitForm = async () => {
+      try {
+        if(modal.mode === 'novo') {
+          await axios.post('http://127.0.0.1:8000/api/products', {
+            nome: form.nome,
+            descricao: form.descricao,
+            preco: form.preco,
+            data_validade: form.data_validade,
+            categoria_id: form.categoria_id
+          })
+        } else {
+          await axios.put(`http://127.0.0.1:8000/api/products/${modal.produtoId}`, {
+            nome: form.nome,
+            descricao: form.descricao,
+            preco: form.preco,
+            data_validade: form.data_validade,
+            categoria_id: form.categoria_id
+          })
+        }
+        closeModal()
+        fetchProdutos()
+      } catch(err) {
+        console.error(err)
+      }
+    }
+
+    // Excluir
+    const deletar = async (id) => {
+      if(!confirm('Deseja realmente excluir?')) return
+      try {
+        await axios.delete(`http://127.0.0.1:8000/api/products/${id}`)
+        fetchProdutos()
+      } catch(err) {
+        console.error(err)
+      }
+    }
+
+    onMounted(() => fetchProdutos())
+
+    return { search, produtos, modal, form, fetchProdutos, openModal, closeModal, submitForm, deletar }
+  }
+}
+
+Vue.createApp(App).mount('#app')
+</script>
+
+</body>
+</html>
