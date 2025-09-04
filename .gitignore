@@ -3,7 +3,6 @@
 # -----------------------------------
 /backend_api/vendor/
 /backend_api/node_modules/
-backend_api/.env
 /backend_api/storage/
 /backend_api/bootstrap/cache/
 
