@@ -25,3 +25,10 @@ frontend/dist/
 *.swp
 .idea/
 .vscode/
+
+# -----------------------------------
+# IMPORTANTE
+# -----------------------------------
+# O arquivo .env foi liberado para ser versionado neste projeto
+# (apenas para fins de avaliação, já que o banco é temporário).
+# Em produção, NUNCA versionar .env
