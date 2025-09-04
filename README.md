@@ -85,7 +85,7 @@ Prints da Aplicação:
 ![Editar](images/editar-produto.png)
 
 ## EXCLUIR PRODUTO
-![Excluir](images/editar-produto.png)
+![Excluir](images/excluir.png)
 
 
 ### CONSIDERAÇÕES FINAIS 
