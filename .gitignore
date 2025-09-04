@@ -6,6 +6,8 @@
 /backend_api/storage/
 /backend_api/bootstrap/cache/
 
+
+
 # Logs e arquivos de sistema
 backend_api/*.log
 backend_api/*.sqlite
